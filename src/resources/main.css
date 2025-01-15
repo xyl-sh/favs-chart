@@ -70,6 +70,10 @@ input[type="color"] {
 	width: 100%;
 }
 
+.inputs small {
+	font-size: 0.8125rem;
+}
+
 .inputs label,
 .inputs button,
 .inputs input {
