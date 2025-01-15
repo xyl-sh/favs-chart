@@ -85,7 +85,7 @@ input[type="color"] {
 	height: 2.5rem;
 	border-bottom: solid 0.25rem rgb(0 0 0 / 35%);
 
-	line-height: 1.2;
+	line-height: 1;
 	text-overflow: ellipsis;
 	text-transform: uppercase;
 	white-space: nowrap;
