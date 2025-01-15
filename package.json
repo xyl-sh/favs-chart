@@ -1,0 +1,35 @@
+{
+	"name": "favs-chart",
+	"type": "module",
+	"scripts": {
+		"prepare": "husky"
+	},
+	"lint-staged": {
+		"**/*.js": [
+			"eslint --fix",
+			"prettier --write --ignore-unknown"
+		],
+		"**/*.css": [
+			"stylelint --fix",
+			"prettier --write --ignore-unknown"
+		]
+	},
+	"dependencies": {
+		"@eslint/eslintrc": "^3.2.0",
+		"@eslint/js": "^9.18.0",
+		"bunx": "^0.1.0",
+		"eslint-config-airbnb": "^19.0.4",
+		"eslint-config-prettier": "^10.0.1",
+		"globals": "^15.14.0",
+		"stylelint": "^16.13.2"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.1.16",
+		"eslint": "^9.18.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.3.0",
+		"prettier": "3.4.2",
+		"stylelint-config-clean-order": "^7.0.0",
+		"stylelint-config-standard": "^37.0.0"
+	}
+}

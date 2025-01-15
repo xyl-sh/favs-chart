@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Fav Chart Builder</title>
+		<link href="resources/main.css" rel="stylesheet" type="text/css" />
+		<script src="resources/main.js"></script>
+		<link
+			rel="preload"
+			href="resources/fonts/HelveticaNowText-Bold.ttf"
+			as="font"
+			type="font/ttf"
+			crossorigin
+		/>
+
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+		<meta name="title" content="Fav Chart Generator" />
+		<meta name="description" content="Easily build your fav chart." />
+		<meta name="theme-color" content="#ffffff" />
+
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content="https://favs.xyl.sh/" />
+		<meta property="og:title" content="Fav Chart Generator" />
+		<meta property="og:description" content="Easily build your fav chart." />
+		<meta
+			property="og:image"
+			content="https://favs.xyl.sh/resources/meta/example.png"
+		/>
+
+		<meta property="twitter:card" content="summary_large_image" />
+		<meta property="twitter:url" content="https://favs.xyl.sh/" />
+		<meta property="twitter:title" content="Fav Chart Generator" />
+		<meta
+			property="twitter:description"
+			content="Easily build your fav chart."
+		/>
+		<meta
+			property="twitter:image"
+			content="https://favs.xyl.sh/resources/meta/example.png"
+		/>
+	</head>
+	<body>
+		<h1>Fav Chart Builder</h1>
+		<div class="heading">
+			<p>
+				To edit, drag an image to a box or click on it. You can also change the
+				header and labels by clicking on them.
+			</p>
+			<p>
+				This generates entirely on your device. Your images are not uploaded
+				anywhere (verifiable via network dev tools tab).
+			</p>
+		</div>
+		<svg spellcheck="false" xmlns="http://www.w3.org/2000/svg">
+			<rect></rect>
+			<g class="header-container changeable">
+				<rect></rect>
+				<text class="header" data-default-rem="4"></text>
+			</g>
+			<g id="container"></g>
+		</svg>
+		<div class="inputs">
+			<button id="save-button">Download Image</button>
+			<div class="choice scaling-choice">
+				<button class="selected" data-type="fill">Fill</button>
+				<button data-type="fit">Fit</button>
+			</div>
+			<div class="input-group">
+				<div class="rows-columns">
+					<input
+						value="7"
+						id="columns-input"
+						class="text-input"
+						type="number"
+					/>
+					<span>×</span>
+					<input value="4" id="rows-input" class="text-input" type="number" />
+				</div>
+				<button id="dimensions-button">Set Dimensions</button>
+			</div>
+			<button id="template-button">Copy Template Link</button>
+		</div>
+		<dialog id="slot-modal">
+			<div id="modal-bounds">
+				<div id="modal-header">
+					<h2>Fav Chart Builder</h2>
+					<button id="close-modal" autofocus>✖</button>
+				</div>
+				<div class="inputs">
+					<div class="choice scaling-choice">
+						<button class="selected" data-type="fill">Fill</button>
+						<button data-type="fit">Fit</button>
+					</div>
+					<input
+						id="select-file"
+						name="select-file"
+						type="file"
+						accept="image/*"
+					/>
+					<label for="select-file" class="fileInput">Select File</label>
+					<div class="input-group">
+						<input
+							placeholder="TYPE HERE..."
+							id="text-field"
+							class="text-input"
+							autocomplete="off"
+						/>
+						<button id="set-text">Set Text</button>
+						<small
+							>Tip: you can also use the text field to paste an image from your
+							clipboard</small
+						>
+					</div>
+					<button id="reset-button">Reset</button>
+				</div>
+			</div>
+		</dialog>
+	</body>
+</html>
