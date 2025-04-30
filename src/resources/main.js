@@ -6,6 +6,10 @@ const textY = boxHeight + margin * 2;
 const totalWidth = boxWidth + margin * 2;
 const totalHeight = boxHeight + textHeight + margin * 3;
 const headerHeight = 100;
+const headerBoxWidth = 150;
+const headerBoxHeight = 85;
+const headerTotalWidth = headerBoxWidth + margin * 2;
+const headerTotalHeight = headerBoxHeight + margin * 2;
 const aspectRatio = boxWidth / boxHeight;
 const defaultColumns = 7;
 const defaultRows = 4;
@@ -32,6 +36,7 @@ const defaultFields = [
 	],
 	["drug", "youtube", "comedian", "anime", "place", "animal", "retro vidya"],
 ];
+const defaultHeaderBoxVisibility = false;
 const templateDefaults = { entries: {} };
 
 const isSafari =
@@ -62,6 +67,19 @@ boxTemplate.innerHTML = String.raw`
   </g>
 </svg>
 `;
+
+const headerBoxTemplate = document.createElement("template");
+headerBoxTemplate.innerHTML = String.raw`
+<svg>
+	<g class="box header">
+		<rect width="${headerTotalWidth}" height="${headerTotalHeight}"></rect>
+		<g class="content-container" transform="translate(${margin}, ${margin})">
+		<rect width="${headerBoxWidth}" height="${headerBoxHeight}"></rect>
+		<image preserveAspectRatio="xMidYMid slice" width="${headerBoxWidth}" height="${headerBoxHeight}" image-rendering="optimizeSpeed"></image>
+		<text x="${headerBoxWidth / 2}" y="${headerBoxHeight / 2}" class="content" data-default-rem="2"></text>
+    </g>
+  </g>
+</svg>`;
 
 function fileToDataURL(file) {
 	return new Promise((resolve) => {
@@ -131,7 +149,10 @@ function setText() {
 			"http://www.w3.org/2000/svg",
 			"tspan",
 		);
-		tspan.setAttribute("x", boxWidth / 2);
+		tspan.setAttribute(
+			"x",
+			(element.closest(".header") ? headerBoxWidth : boxWidth) / 2,
+		);
 		tspan.setAttribute("alignment-baseline", "central");
 
 		tspan.textContent = t;
@@ -281,8 +302,9 @@ function showModal(e) {
 	const box = e.closest("[data-slot]");
 	dialog.dataset.selectedSlot = box.dataset.slot;
 
-	dialog.querySelector("h2").textContent =
-		box.querySelector(".label").textContent;
+	dialog.querySelector("h2").textContent = box.classList.contains("header")
+		? ""
+		: box.querySelector(".label").textContent;
 	dialog.querySelector("#text-field").value = [
 		...box.querySelectorAll(".content tspan"),
 	]
@@ -317,7 +339,7 @@ function setSvgHeight() {
 	}
 }
 
-function genBoxes(columns, rows) {
+function genBoxes(columns, rows, extras) {
 	const width = totalWidth * columns + margin * (columns + 1);
 	const height = totalHeight * rows + margin * (rows + 1) + headerHeight;
 	const resizeObserver = new ResizeObserver((entries, observer) => {
@@ -349,16 +371,46 @@ function genBoxes(columns, rows) {
 	mainRect.setAttribute("height", height);
 
 	const headerElem = svg.querySelector(".header");
-	if (!headerElem.getAttribute("height")) {
-		const headerRect = svg.querySelector(".header-container rect");
-		headerRect.setAttribute("height", headerHeight);
-		headerRect.setAttribute("width", width);
-		headerElem.setAttribute("y", headerHeight / 2);
-		headerElem.setAttribute("x", width / 2);
-		resizeObserver.observe(headerRect);
-		headerElem.textContent = templateDefaults.t || defaultTitle;
-		headerElem.dataset.defaultRem = 4;
-	}
+	const headerRect = svg.querySelector(".header-container rect");
+	const extrasBuffer = totalWidth + margin * 2;
+	headerRect.setAttribute("width", extras ? width - extrasBuffer * 2 : width);
+	headerRect.setAttribute(
+		"transform",
+		`translate(${extras ? extrasBuffer : 0}, 0)`,
+	);
+	headerRect.setAttribute("height", headerHeight);
+	headerElem.setAttribute("y", headerHeight / 2);
+	headerElem.setAttribute("x", width / 2);
+	resizeObserver.observe(headerRect);
+	headerElem.textContent =
+		headerElem.textContent || templateDefaults.t || defaultTitle;
+	headerElem.dataset.defaultRem = 4;
+
+	const headerContainer = svg.querySelector(".header-container");
+	Array(2)
+		.fill(0)
+		.forEach((_, i) => {
+			const r = "h";
+			const c = i % 2;
+
+			const x = Math.abs(
+				(c ? -width + headerTotalWidth : 0) +
+					(margin + (boxWidth - headerBoxWidth) / 2),
+			);
+			const y = 5;
+
+			const existingElem = svg.querySelector(`.header[data-slot="${r}_${c}"]`);
+			const boxElem =
+				existingElem ||
+				headerBoxTemplate.content.querySelector("g").cloneNode(true);
+			boxElem.dataset.slot = `${r}_${c}`;
+			boxElem.setAttribute("transform", `translate(${x}, ${y})`);
+			boxElem.setAttribute("visibility", extras ? "visible" : "hidden");
+
+			if (!existingElem) {
+				headerContainer.appendChild(boxElem);
+			}
+		});
 
 	const containerElem = svg.querySelector("#container");
 	if (!containerElem.getAttribute("transform")) {
@@ -405,7 +457,8 @@ function genBoxes(columns, rows) {
 function updateBoxes() {
 	const columns = document.querySelector("#columns-input").value;
 	const rows = document.querySelector("#rows-input").value;
-	genBoxes(Number(columns), Number(rows));
+	const extras = document.querySelector("#header-buttons").checked;
+	genBoxes(Number(columns), Number(rows), extras);
 }
 
 function getDefaultFromParam(value, key) {
@@ -418,6 +471,9 @@ function getDefaultFromParam(value, key) {
 			break;
 		case "t":
 			templateDefaults.t = value;
+			break;
+		case "e":
+			templateDefaults.e = !!Number(value);
 			break;
 		default:
 			if (key.match(/\d*_\d*/)) {
@@ -448,6 +504,9 @@ function getDefaults() {
 	if (templateDefaults.r) {
 		document.querySelector("#rows-input").value = templateDefaults.r;
 	}
+	if (templateDefaults.e) {
+		document.querySelector("#header-buttons").checked = !!templateDefaults.e;
+	}
 }
 
 async function exportTemplate() {
@@ -469,9 +528,14 @@ async function exportTemplate() {
 		urlParams.append("t", title);
 		template.t = title;
 	}
+	const extras = Number(document.querySelector("#header-buttons").checked);
+	if (Number(defaultHeaderBoxVisibility) !== extras) {
+		urlParams.append("e", extras);
+		template.e = extras;
+	}
 
 	const entries = {};
-	svg.querySelectorAll("[data-slot]").forEach((b) => {
+	svg.querySelectorAll("[data-slot]:not(.header)").forEach((b) => {
 		const id = b.dataset.slot;
 		const row = Number(id.split("_")[0]);
 		const column = Number(id.split("_")[1]);
@@ -527,16 +591,26 @@ async function getSvgExtras() {
 document.addEventListener("DOMContentLoaded", async () => {
 	await getSvgExtras();
 	getDefaults();
+	console.log(templateDefaults);
 	genBoxes(
 		templateDefaults.c || defaultColumns,
 		templateDefaults.r || defaultRows,
+		templateDefaults.e || defaultHeaderBoxVisibility,
 	);
 });
 
 document.addEventListener("change", (e) => {
 	const t = e.target;
-	if (t.matches("#select-file")) {
-		updateImage(t);
+
+	switch (t.id) {
+		case "select-file":
+			updateImage(t);
+			break;
+		case "header-buttons":
+			updateBoxes();
+			break;
+		default:
+			break;
 	}
 });
 
