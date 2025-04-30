@@ -27,3 +27,4 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 ### Exceptions
 
 - Files in the `src/resources/fonts/` directory are copyrighted and subject to their own license terms.
+- Files in the `src/resources/icons/` directory are released as Creative Commons Zero (CC0-1.0) and can be considered public domain.
