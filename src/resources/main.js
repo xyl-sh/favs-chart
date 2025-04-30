@@ -10,6 +10,7 @@ const headerBoxWidth = 150;
 const headerBoxHeight = 85;
 const headerTotalWidth = headerBoxWidth + margin * 2;
 const headerTotalHeight = headerBoxHeight + margin * 2;
+const headerBuffer = headerTotalWidth + margin * 2;
 const aspectRatio = boxWidth / boxHeight;
 const defaultColumns = 7;
 const defaultRows = 4;
@@ -372,11 +373,10 @@ function genBoxes(columns, rows, extras) {
 
 	const headerElem = svg.querySelector(".header");
 	const headerRect = svg.querySelector(".header-container rect");
-	const extrasBuffer = totalWidth + margin * 2;
-	headerRect.setAttribute("width", extras ? width - extrasBuffer * 2 : width);
+	headerRect.setAttribute("width", extras ? width - headerBuffer * 2 : width);
 	headerRect.setAttribute(
 		"transform",
-		`translate(${extras ? extrasBuffer : 0}, 0)`,
+		`translate(${extras ? headerBuffer : 0}, 0)`,
 	);
 	headerRect.setAttribute("height", headerHeight);
 	headerElem.setAttribute("y", headerHeight / 2);
@@ -393,10 +393,7 @@ function genBoxes(columns, rows, extras) {
 			const r = "h";
 			const c = i % 2;
 
-			const x = Math.abs(
-				(c ? -width + headerTotalWidth : 0) +
-					(margin + (boxWidth - headerBoxWidth) / 2),
-			);
+			const x = Math.abs((c ? -width + headerTotalWidth : 0) + margin);
 			const y = 5;
 
 			const existingElem = svg.querySelector(`.header[data-slot="${r}_${c}"]`);
@@ -591,7 +588,6 @@ async function getSvgExtras() {
 document.addEventListener("DOMContentLoaded", async () => {
 	await getSvgExtras();
 	getDefaults();
-	console.log(templateDefaults);
 	genBoxes(
 		templateDefaults.c || defaultColumns,
 		templateDefaults.r || defaultRows,
