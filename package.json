@@ -4,14 +4,14 @@
 	"scripts": {
 		"format": "prettier . --write --ignore-unknown",
 		"lint": "eslint . --fix",
-		"lint:style": "stylelint '**/*.{css}' --fix",
+		"lint:style": "stylelint '**/*.css' --fix",
 		"prepare": "husky"
 	},
 	"lint-staged": {
-		"**/*.{js}": [
+		"**/*.js": [
 			"bun lint"
 		],
-		"**/*.{css}": [
+		"**/*.css": [
 			"bun lint:style"
 		],
 		"**/*": [
