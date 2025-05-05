@@ -57,11 +57,6 @@ input:disabled {
 	color: revert;
 }
 
-input[type="file"],
-input[type="color"] {
-	display: none;
-}
-
 .inputs {
 	display: flex;
 	flex-direction: column;
@@ -72,6 +67,10 @@ input[type="color"] {
 
 	font-size: 2rem;
 	text-align: center;
+}
+
+.inputs input[type="file"] {
+	display: none;
 }
 
 .inputs > * {
