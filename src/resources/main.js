@@ -1,17 +1,3 @@
-const margin = 5;
-const boxWidth = 185;
-const boxHeight = 225;
-const textHeight = 45;
-const textY = boxHeight + margin * 2;
-const totalWidth = boxWidth + margin * 2;
-const totalHeight = boxHeight + textHeight + margin * 3;
-const headerHeight = 100;
-const headerBoxWidth = 150;
-const headerBoxHeight = 85;
-const headerTotalWidth = headerBoxWidth + margin * 2;
-const headerTotalHeight = headerBoxHeight + margin * 2;
-const headerBuffer = headerTotalWidth + margin * 2;
-const aspectRatio = boxWidth / boxHeight;
 const defaultColumns = 7;
 const defaultRows = 4;
 const defaultTitle = "Anon's Favourite...";
@@ -37,7 +23,6 @@ const defaultFields = [
 	],
 	["drug", "youtube", "comedian", "anime", "place", "animal", "retro vidya"],
 ];
-const defaultHeaderBoxVisibility = false;
 const templateDefaults = { entries: {} };
 
 const isSafari =
@@ -48,22 +33,15 @@ const boxTemplate = document.createElement("template");
 boxTemplate.innerHTML = String.raw`
 <svg>
   <g class="box">
-    <rect width="${totalWidth}" height="${totalHeight}" />
-    <g class="content-container" transform="translate(${margin}, ${margin})">
-      <rect width="${boxWidth}" height="${boxHeight}" />
-      <image preserveAspectRatio="xMidYMid slice" width="${boxWidth}" height="${boxHeight}" image-rendering="optimizeSpeed"></image>
-      <text
-        x="${boxWidth / 2}"
-        y="${boxHeight / 2}"
-        class="content"
-        data-default-rem="3"></text>
+    <rect />
+    <g class="content-container">
+      <rect />
+      <image preserveAspectRatio="xMidYMid slice" image-rendering="optimizeSpeed"></image>
+      <text class="content" data-default-rem="3"></text>
     </g>
-    <g class="label-container changeable" transform="translate(${margin}, ${textY})">
-      <rect width="${boxWidth}" height="${textHeight}" />
-      <text
-        x="${boxWidth / 2}"
-        y="${textHeight / 2}"
-        class="label"></text>
+    <g class="label-container changeable">
+      <rect />
+      <text class="label"></text>
     </g>
   </g>
 </svg>
@@ -73,11 +51,11 @@ const headerBoxTemplate = document.createElement("template");
 headerBoxTemplate.innerHTML = String.raw`
 <svg>
 	<g class="box header">
-		<rect width="${headerTotalWidth}" height="${headerTotalHeight}"></rect>
-		<g class="content-container" transform="translate(${margin}, ${margin})">
-		<rect width="${headerBoxWidth}" height="${headerBoxHeight}"></rect>
-		<image preserveAspectRatio="xMidYMid slice" width="${headerBoxWidth}" height="${headerBoxHeight}" image-rendering="optimizeSpeed"></image>
-		<text x="${headerBoxWidth / 2}" y="${headerBoxHeight / 2}" class="content" data-default-rem="2"></text>
+		<rect />
+		<g class="content-container">
+		<rect />
+		<image preserveAspectRatio="xMidYMid slice" image-rendering="optimizeSpeed"></image>
+		<text class="content" data-default-rem="2"></text>
     </g>
   </g>
 </svg>`;
@@ -101,7 +79,7 @@ function scaleText(e, timeout = false) {
 	const rect = e.parentElement.querySelector("rect");
 	const rectBox = rect.getBBox();
 
-	e.style.fontSize = `${defaultRem}rem`;
+	e.style.fontSize = `${defaultRem}em`;
 	const textBox = e.getBBox();
 	if (textBox.width <= rectBox.width && textBox.height <= rectBox.height) {
 		return;
@@ -112,7 +90,7 @@ function scaleText(e, timeout = false) {
 		rectBox.height / textBox.height,
 	);
 
-	e.style.fontSize = `${defaultRem * emScale}rem`;
+	e.style.fontSize = `${defaultRem * emScale}em`;
 }
 
 function setLabel(t) {
@@ -144,16 +122,19 @@ function setText() {
 			words[i] = null;
 		}
 	});
+
+	const style = window.getComputedStyle(element);
+	const width =
+		parseInt(style.getPropertyValue("--total-width"), 10) -
+		parseInt(style.getPropertyValue("--margin"), 10) * 2;
+
 	words = words.filter((t) => t);
 	const tspans = words.map((t, i) => {
 		const tspan = document.createElementNS(
 			"http://www.w3.org/2000/svg",
 			"tspan",
 		);
-		tspan.setAttribute(
-			"x",
-			(element.closest(".header") ? headerBoxWidth : boxWidth) / 2,
-		);
+		tspan.setAttribute("x", width / 2);
 		tspan.setAttribute("alignment-baseline", "central");
 
 		tspan.textContent = t;
@@ -190,13 +171,20 @@ async function updateImage(data, elem) {
 	const imageElem = e.closest(".box").querySelector("image");
 	const file = data.files[0];
 
+	const imageDimensions = imageElem.getBBox();
+	const imageWidth = imageDimensions.width;
+	const imageHeight = imageDimensions.height;
+	const imageAspectRatio = imageWidth / imageHeight;
+
 	const image = new Image();
 	image.onload = () => {
 		const canvas = document.createElement("canvas");
 		const ctx = canvas.getContext("2d");
 		const imgAspect = image.naturalWidth / image.naturalHeight;
-		const width = imgAspect < aspectRatio ? boxWidth : boxHeight * imgAspect;
-		const height = imgAspect < aspectRatio ? boxWidth / imgAspect : boxHeight;
+		const width =
+			imgAspect < imageAspectRatio ? imageWidth : imageHeight * imgAspect;
+		const height =
+			imgAspect < imageAspectRatio ? imageWidth / imgAspect : imageHeight;
 		canvas.width = width;
 		canvas.height = height;
 		ctx.drawImage(image, 0, 0, width, height);
@@ -248,6 +236,7 @@ function render(image, width, height, button) {
 	const b = button;
 	const renderCanvas = document.createElement("canvas");
 	const renderContext = renderCanvas.getContext("2d");
+
 	renderCanvas.width = width;
 	renderCanvas.height = height;
 	renderContext.drawImage(image, 0, 0, width, height);
@@ -279,8 +268,13 @@ function save(button, retried = false) {
 	});
 
 	const svg = document.querySelector("svg");
-	const { width } = svg.viewBox.baseVal;
-	const { height } = svg.viewBox.baseVal;
+	let { width } = svg.viewBox.baseVal;
+	let { height } = svg.viewBox.baseVal;
+
+	if (svg.dataset.rows > 5 || svg.dataset.columns > 5) {
+		width /= 2;
+		height /= 2;
+	}
 
 	const svgURL = new XMLSerializer().serializeToString(svg);
 	const svgBlob = new Blob([svgURL], { type: "image/svg+xml" });
@@ -303,7 +297,7 @@ function showModal(e) {
 	const box = e.closest("[data-slot]");
 	dialog.dataset.selectedSlot = box.dataset.slot;
 
-	dialog.querySelector("h2").textContent = box.classList.contains("header")
+	dialog.querySelector("h2").textContent = box.closest(".header, .grid")
 		? ""
 		: box.querySelector(".label").textContent;
 	dialog.querySelector("#text-field").value = [
@@ -340,25 +334,29 @@ function setSvgHeight() {
 	}
 }
 
-function genBoxes(columns, rows, extras) {
-	const width = totalWidth * columns + margin * (columns + 1);
-	const height = totalHeight * rows + margin * (rows + 1) + headerHeight;
+function genBoxes(columns, rows, extras, grid) {
+	const svg = document.querySelector("svg");
+	svg.classList.toggle("grid", grid);
+
+	const svgStyle = window.getComputedStyle(svg);
+
+	const marginValue = parseInt(svgStyle.getPropertyValue("--margin"), 10);
+	const totalWidth = parseInt(svgStyle.getPropertyValue("--total-width"), 10);
+	const totalHeight = parseInt(svgStyle.getPropertyValue("--total-height"), 10);
+	const headerHeight = parseInt(
+		svgStyle.getPropertyValue("--header-height"),
+		10,
+	);
+
+	const width = totalWidth * columns + marginValue * (columns + 1);
+	const height = totalHeight * rows + marginValue * (rows + 1) + headerHeight;
 	const resizeObserver = new ResizeObserver((entries, observer) => {
 		entries.forEach((e) => {
 			const rect = e.target;
-			const rectBox = rect.getBBox();
-			if (
-				rectBox.width !== Number(rect.getAttribute("width")) ||
-				rectBox.height !== Number(rect.getAttribute("height"))
-			) {
-				return;
-			}
 			observer.unobserve(rect);
 			scaleText(rect.parentElement.querySelector("text"));
 		});
 	});
-
-	const svg = document.querySelector("svg");
 	svg.dataset.rows = rows;
 	svg.dataset.columns = columns;
 
@@ -371,8 +369,16 @@ function genBoxes(columns, rows, extras) {
 	mainRect.setAttribute("width", width);
 	mainRect.setAttribute("height", height);
 
+	const headerContainer = svg.querySelector(".header-container");
 	const headerElem = svg.querySelector(".header");
-	const headerRect = svg.querySelector(".header-container rect");
+	const headerRect = headerContainer.querySelector("rect");
+
+	headerContainer.classList.toggle("extras", extras);
+	const headerBoxWidth = parseInt(
+		window.getComputedStyle(headerElem).getPropertyValue("--total-width"),
+		10,
+	);
+	const headerBuffer = headerBoxWidth + marginValue * 2;
 	headerRect.setAttribute("width", extras ? width - headerBuffer * 2 : width);
 	headerRect.setAttribute(
 		"transform",
@@ -386,14 +392,13 @@ function genBoxes(columns, rows, extras) {
 		headerElem.textContent || templateDefaults.t || defaultTitle;
 	headerElem.dataset.defaultRem = 4;
 
-	const headerContainer = svg.querySelector(".header-container");
 	Array(2)
 		.fill(0)
 		.forEach((_, i) => {
 			const r = "h";
 			const c = i % 2;
 
-			const x = Math.abs((c ? -width + headerTotalWidth : 0) + margin);
+			const x = Math.abs((c ? -width + headerBoxWidth : 0) + marginValue);
 			const y = 5;
 
 			const existingElem = svg.querySelector(`.header[data-slot="${r}_${c}"]`);
@@ -402,7 +407,6 @@ function genBoxes(columns, rows, extras) {
 				headerBoxTemplate.content.querySelector("g").cloneNode(true);
 			boxElem.dataset.slot = `${r}_${c}`;
 			boxElem.setAttribute("transform", `translate(${x}, ${y})`);
-			boxElem.setAttribute("visibility", extras ? "visible" : "hidden");
 
 			if (!existingElem) {
 				headerContainer.appendChild(boxElem);
@@ -410,10 +414,6 @@ function genBoxes(columns, rows, extras) {
 		});
 
 	const containerElem = svg.querySelector("#container");
-	if (!containerElem.getAttribute("transform")) {
-		containerElem.setAttribute("transform", `translate(0, ${headerHeight})`);
-		containerElem.style.setProperty("--box-height", `${boxHeight}px`);
-	}
 
 	const totalBoxes = rows * columns;
 	Array(totalBoxes)
@@ -423,12 +423,16 @@ function genBoxes(columns, rows, extras) {
 			const c = i % columns;
 
 			const existingElem = svg.querySelector(`.box[data-slot="${r}_${c}"]`);
+			const boxElem =
+				existingElem || boxTemplate.content.querySelector("g").cloneNode(true);
+
+			const x = marginValue + c * marginValue + c * totalWidth;
+			const y = marginValue + r * marginValue + r * totalHeight;
+			boxElem.setAttribute("transform", `translate(${x}, ${y})`);
+
 			if (existingElem) {
 				return;
 			}
-
-			const x = margin + c * margin + c * totalWidth;
-			const y = margin + r * margin + r * totalHeight;
 
 			let label;
 			try {
@@ -439,9 +443,7 @@ function genBoxes(columns, rows, extras) {
 				}
 			}
 
-			const boxElem = boxTemplate.content.querySelector("g").cloneNode(true);
 			boxElem.dataset.slot = `${r}_${c}`;
-			boxElem.setAttribute("transform", `translate(${x}, ${y})`);
 
 			const boxLabel = boxElem.querySelector(".label");
 			resizeObserver.observe(boxElem.querySelector(".label-container rect"));
@@ -455,7 +457,8 @@ function updateBoxes() {
 	const columns = document.querySelector("#columns-input").value;
 	const rows = document.querySelector("#rows-input").value;
 	const extras = document.querySelector("#header-buttons").checked;
-	genBoxes(Number(columns), Number(rows), extras);
+	const gridMode = document.querySelector("#grid-button").checked;
+	genBoxes(Number(columns), Number(rows), extras, gridMode);
 }
 
 function getDefaultFromParam(value, key) {
@@ -471,6 +474,9 @@ function getDefaultFromParam(value, key) {
 			break;
 		case "e":
 			templateDefaults.e = !!Number(value);
+			break;
+		case "g":
+			templateDefaults.g = !!Number(value);
 			break;
 		default:
 			if (key.match(/\d*_\d*/)) {
@@ -504,6 +510,9 @@ function getDefaults() {
 	if (templateDefaults.e) {
 		document.querySelector("#header-buttons").checked = !!templateDefaults.e;
 	}
+	if (templateDefaults.g) {
+		document.querySelector("#grid-button").checked = !!templateDefaults.g;
+	}
 }
 
 async function exportTemplate() {
@@ -526,9 +535,14 @@ async function exportTemplate() {
 		template.t = title;
 	}
 	const extras = Number(document.querySelector("#header-buttons").checked);
-	if (Number(defaultHeaderBoxVisibility) !== extras) {
+	if (extras) {
 		urlParams.append("e", extras);
 		template.e = extras;
+	}
+	const grid = Number(document.querySelector("#grid-button").checked);
+	if (grid) {
+		urlParams.append("g", grid);
+		template.g = grid;
 	}
 
 	const entries = {};
@@ -591,7 +605,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 	genBoxes(
 		templateDefaults.c || defaultColumns,
 		templateDefaults.r || defaultRows,
-		templateDefaults.e || defaultHeaderBoxVisibility,
+		templateDefaults.e || false,
+		templateDefaults.g || false,
 	);
 });
 
@@ -603,6 +618,7 @@ document.addEventListener("change", (e) => {
 			updateImage(t);
 			break;
 		case "header-buttons":
+		case "grid-button":
 			updateBoxes();
 			break;
 		default:
