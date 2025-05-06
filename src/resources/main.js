@@ -158,10 +158,10 @@ async function updateImage(data, elem) {
 	const imageElem = e.closest(".box").querySelector("image");
 	const file = data.files[0];
 
-	const imageDimensions = imageElem.getBBox();
-	const imageWidth = imageDimensions.width;
-	const imageHeight = imageDimensions.height;
-	const imageAspectRatio = imageWidth / imageHeight;
+	const containerDimensions = imageElem.getBBox();
+	const containerWidth = containerDimensions.width;
+	const containerHeight = containerDimensions.height;
+	const containerRatio = containerWidth / containerHeight;
 
 	const image = new Image();
 	image.onload = () => {
@@ -169,9 +169,9 @@ async function updateImage(data, elem) {
 		const ctx = canvas.getContext("2d");
 		const imgAspect = image.naturalWidth / image.naturalHeight;
 		const width =
-			imgAspect < imageAspectRatio ? imageWidth : imageHeight * imgAspect;
+			imgAspect < containerRatio ? containerWidth : containerHeight * imgAspect;
 		const height =
-			imgAspect < imageAspectRatio ? imageWidth / imgAspect : imageHeight;
+			imgAspect < containerRatio ? containerWidth / imgAspect : containerHeight;
 		canvas.width = width;
 		canvas.height = height;
 		ctx.drawImage(image, 0, 0, width, height);
@@ -338,11 +338,11 @@ function genBoxes(columns, rows, extras, grid) {
 	);
 
 	const width = grid
-		? totalWidth * columns
+		? totalWidth * columns - marginValue * (columns - 3)
 		: totalWidth * columns + marginValue * (columns + 1);
 	const height =
 		(grid
-			? totalHeight * rows
+			? totalHeight * rows - marginValue * (rows - 3)
 			: totalHeight * rows + marginValue * (rows + 1)) + headerHeight;
 	const resizeObserver = new ResizeObserver((entries, observer) => {
 		entries.forEach((e) => {
@@ -372,12 +372,9 @@ function genBoxes(columns, rows, extras, grid) {
 		window.getComputedStyle(headerElem).getPropertyValue("--total-width"),
 		10,
 	);
-	const headerBuffer = headerBoxWidth + marginValue * 2;
-	headerRect.setAttribute("width", extras ? width - headerBuffer * 2 : width);
-	headerRect.setAttribute(
-		"transform",
-		`translate(${extras ? headerBuffer : 0}, 0)`,
-	);
+	const headerBuffer = marginValue * 2 + (extras ? headerBoxWidth : 0);
+	headerRect.setAttribute("width", width - headerBuffer * 2);
+	headerRect.setAttribute("transform", `translate(${headerBuffer}, 0)`);
 	headerRect.setAttribute("height", headerHeight);
 	headerElem.setAttribute("y", headerHeight / 2);
 	headerElem.setAttribute("x", width / 2);
@@ -407,6 +404,9 @@ function genBoxes(columns, rows, extras, grid) {
 		});
 
 	const containerElem = svg.querySelector("#container");
+	containerElem
+		.querySelectorAll(`.box[data-slot]`)
+		.forEach((b) => b.classList.add("hidden"));
 
 	const totalBoxes = rows * columns;
 	Array(totalBoxes)
@@ -418,6 +418,7 @@ function genBoxes(columns, rows, extras, grid) {
 			const existingElem = svg.querySelector(`.box[data-slot="${r}_${c}"]`);
 			const boxElem =
 				existingElem || boxTemplate.content.querySelector("g").cloneNode(true);
+			boxElem.classList.remove("hidden");
 
 			const x =
 				c * (grid ? totalWidth - marginValue : marginValue + totalWidth) +

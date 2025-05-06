@@ -103,6 +103,7 @@ text {
 }
 
 .header-container:not(.extras) .box,
-.header-container .box .label-container {
+.header-container .box .label-container,
+.box.hidden {
 	display: none;
 }
