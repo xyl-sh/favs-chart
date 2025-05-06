@@ -47,19 +47,6 @@ boxTemplate.innerHTML = String.raw`
 </svg>
 `;
 
-const headerBoxTemplate = document.createElement("template");
-headerBoxTemplate.innerHTML = String.raw`
-<svg>
-	<g class="box header">
-		<rect />
-		<g class="content-container">
-		<rect />
-		<image preserveAspectRatio="xMidYMid slice" image-rendering="optimizeSpeed"></image>
-		<text class="content" data-default-rem="2"></text>
-    </g>
-  </g>
-</svg>`;
-
 function fileToDataURL(file) {
 	return new Promise((resolve) => {
 		const reader = new FileReader();
@@ -297,7 +284,9 @@ function showModal(e) {
 	const box = e.closest("[data-slot]");
 	dialog.dataset.selectedSlot = box.dataset.slot;
 
-	dialog.querySelector("h2").textContent = box.closest(".header, .grid")
+	dialog.querySelector("h2").textContent = box.closest(
+		".header-container, .grid",
+	)
 		? ""
 		: box.querySelector(".label").textContent;
 	dialog.querySelector("#text-field").value = [
@@ -348,8 +337,13 @@ function genBoxes(columns, rows, extras, grid) {
 		10,
 	);
 
-	const width = totalWidth * columns + marginValue * (columns + 1);
-	const height = totalHeight * rows + marginValue * (rows + 1) + headerHeight;
+	const width = grid
+		? totalWidth * columns
+		: totalWidth * columns + marginValue * (columns + 1);
+	const height =
+		(grid
+			? totalHeight * rows
+			: totalHeight * rows + marginValue * (rows + 1)) + headerHeight;
 	const resizeObserver = new ResizeObserver((entries, observer) => {
 		entries.forEach((e) => {
 			const rect = e.target;
@@ -399,12 +393,11 @@ function genBoxes(columns, rows, extras, grid) {
 			const c = i % 2;
 
 			const x = Math.abs((c ? -width + headerBoxWidth : 0) + marginValue);
-			const y = 5;
+			const y = marginValue;
 
-			const existingElem = svg.querySelector(`.header[data-slot="${r}_${c}"]`);
+			const existingElem = svg.querySelector(`.box[data-slot="${r}_${c}"]`);
 			const boxElem =
-				existingElem ||
-				headerBoxTemplate.content.querySelector("g").cloneNode(true);
+				existingElem || boxTemplate.content.querySelector("g").cloneNode(true);
 			boxElem.dataset.slot = `${r}_${c}`;
 			boxElem.setAttribute("transform", `translate(${x}, ${y})`);
 
@@ -426,8 +419,12 @@ function genBoxes(columns, rows, extras, grid) {
 			const boxElem =
 				existingElem || boxTemplate.content.querySelector("g").cloneNode(true);
 
-			const x = marginValue + c * marginValue + c * totalWidth;
-			const y = marginValue + r * marginValue + r * totalHeight;
+			const x =
+				c * (grid ? totalWidth - marginValue : marginValue + totalWidth) +
+				marginValue;
+			const y =
+				r * (grid ? totalHeight - marginValue : marginValue + totalHeight) +
+				marginValue;
 			boxElem.setAttribute("transform", `translate(${x}, ${y})`);
 
 			if (existingElem) {
@@ -546,29 +543,31 @@ async function exportTemplate() {
 	}
 
 	const entries = {};
-	svg.querySelectorAll("[data-slot]:not(.header)").forEach((b) => {
-		const id = b.dataset.slot;
-		const row = Number(id.split("_")[0]);
-		const column = Number(id.split("_")[1]);
+	svg
+		.querySelectorAll("*:not(.header-container) > [data-slot]")
+		.forEach((b) => {
+			const id = b.dataset.slot;
+			const row = Number(id.split("_")[0]);
+			const column = Number(id.split("_")[1]);
 
-		const value = b.querySelector(".label").textContent.trim().toLowerCase();
-		if (row + 1 > rows || column + 1 > columns || !value) {
-			return;
-		}
-		let defaultValue;
-		try {
-			defaultValue = defaultFields[row][column].trim().toLowerCase();
-		} catch (e) {
-			if (e) {
-				defaultValue = "";
+			const value = b.querySelector(".label").textContent.trim().toLowerCase();
+			if (row + 1 > rows || column + 1 > columns || !value) {
+				return;
 			}
-		}
-		if (value === defaultValue) {
-			return;
-		}
-		urlParams.append(id, value);
-		entries[id] = value;
-	});
+			let defaultValue;
+			try {
+				defaultValue = defaultFields[row][column].trim().toLowerCase();
+			} catch (e) {
+				if (e) {
+					defaultValue = "";
+				}
+			}
+			if (value === defaultValue) {
+				return;
+			}
+			urlParams.append(id, value);
+			entries[id] = value;
+		});
 
 	if (Object.keys(entries).length) {
 		template.entries = entries;

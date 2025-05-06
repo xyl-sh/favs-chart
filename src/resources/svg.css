@@ -102,6 +102,7 @@ text {
 	);
 }
 
-.header-container:not(.extras) .box {
+.header-container:not(.extras) .box,
+.header-container .box .label-container {
 	display: none;
 }
