@@ -1,5 +1,6 @@
 const defaultColumns = 7;
 const defaultRows = 4;
+const defaultGridDimension = 3;
 const defaultTitle = "Anon's Favourite...";
 const defaultFields = [
 	[
@@ -47,6 +48,8 @@ boxTemplate.innerHTML = String.raw`
 </svg>
 `;
 
+let modified = false;
+
 function fileToDataURL(file) {
 	return new Promise((resolve) => {
 		const reader = new FileReader();
@@ -81,6 +84,7 @@ function scaleText(e, timeout = false) {
 }
 
 function setLabel(t) {
+	modified = true;
 	const textElem = t.closest("g").querySelector("text");
 	// eslint-disable-next-line no-alert
 	const newText = prompt("Change text:", textElem.textContent);
@@ -92,6 +96,7 @@ function setLabel(t) {
 }
 
 function setText() {
+	modified = true;
 	const dialog = document.querySelector("#slot-modal");
 	const element = document.querySelector(
 		`[data-slot="${dialog.dataset.selectedSlot}"] .content`,
@@ -176,6 +181,7 @@ async function updateImage(data, elem) {
 		canvas.height = height;
 		ctx.drawImage(image, 0, 0, width, height);
 		imageElem.setAttribute("href", canvas.toDataURL("image/png"));
+		modified = true;
 		dialog.close();
 	};
 
@@ -451,11 +457,20 @@ function genBoxes(columns, rows, extras, grid) {
 		});
 }
 
-function updateBoxes() {
-	const columns = document.querySelector("#columns-input").value;
-	const rows = document.querySelector("#rows-input").value;
+function updateBoxes(gridToggled = false) {
+	let columns = document.querySelector("#columns-input").value;
+	let rows = document.querySelector("#rows-input").value;
 	const extras = document.querySelector("#header-buttons").checked;
 	const gridMode = document.querySelector("#grid-button").checked;
+	if (gridToggled && !modified) {
+		if (templateDefaults.g) {
+			columns = gridMode ? templateDefaults.c : defaultColumns;
+			rows = gridMode ? templateDefaults.r : defaultRows;
+		} else {
+			columns = gridMode ? defaultGridDimension : templateDefaults.c;
+			rows = gridMode ? defaultGridDimension : templateDefaults.r;
+		}
+	}
 	genBoxes(Number(columns), Number(rows), extras, gridMode);
 }
 
@@ -499,34 +514,31 @@ function getDefaults() {
 		urlParams.forEach((v, k) => getDefaultFromParam(v, k));
 	}
 
-	if (templateDefaults.c) {
-		document.querySelector("#columns-input").value = templateDefaults.c;
-	}
-	if (templateDefaults.r) {
-		document.querySelector("#rows-input").value = templateDefaults.r;
-	}
 	if (templateDefaults.e) {
 		document.querySelector("#header-buttons").checked = !!templateDefaults.e;
 	}
 	if (templateDefaults.g) {
 		document.querySelector("#grid-button").checked = !!templateDefaults.g;
 	}
+	if (!templateDefaults.c) {
+		templateDefaults.c = templateDefaults.g
+			? defaultGridDimension
+			: defaultColumns;
+	}
+	if (!templateDefaults.r) {
+		templateDefaults.r = templateDefaults.g
+			? defaultGridDimension
+			: defaultRows;
+	}
+
+	document.querySelector("#columns-input").value = templateDefaults.c;
+	document.querySelector("#rows-input").value = templateDefaults.r;
 }
 
 async function exportTemplate() {
 	const template = {};
 	const urlParams = new URLSearchParams();
 	const svg = document.querySelector("svg");
-	const columns = Number(svg.dataset.columns);
-	if (defaultColumns !== columns) {
-		urlParams.append("c", columns);
-		template.c = columns;
-	}
-	const rows = Number(svg.dataset.rows);
-	if (defaultRows !== rows) {
-		urlParams.append("r", rows);
-		template.r = rows;
-	}
 	const title = svg.querySelector(".header-container > text").textContent;
 	if (defaultTitle !== title) {
 		urlParams.append("t", title);
@@ -543,10 +555,25 @@ async function exportTemplate() {
 		template.g = grid;
 	}
 
+	const columns = Number(svg.dataset.columns);
+	if ((grid ? defaultGridDimension : defaultColumns) !== columns) {
+		urlParams.append("c", columns);
+		template.c = columns;
+	}
+	const rows = Number(svg.dataset.rows);
+	if ((grid ? defaultGridDimension : defaultRows) !== rows) {
+		urlParams.append("r", rows);
+		template.r = rows;
+	}
+
 	const entries = {};
 	svg
 		.querySelectorAll("*:not(.header-container) > [data-slot]")
 		.forEach((b) => {
+			if (grid) {
+				return;
+			}
+
 			const id = b.dataset.slot;
 			const row = Number(id.split("_")[0]);
 			const column = Number(id.split("_")[1]);
@@ -618,7 +645,14 @@ document.addEventListener("change", (e) => {
 			updateImage(t);
 			break;
 		case "header-buttons":
+			updateBoxes();
+			break;
 		case "grid-button":
+			updateBoxes(true);
+			break;
+		case "rows-input":
+		case "columns-input":
+			modified = true;
 			updateBoxes();
 			break;
 		default:
@@ -637,7 +671,7 @@ document.addEventListener("click", (e) => {
 			save(t);
 			return;
 		case "dimensions-button":
-			updateBoxes(t);
+			updateBoxes();
 			return;
 		case "template-button":
 			exportTemplate();
