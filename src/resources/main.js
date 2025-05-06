@@ -372,7 +372,7 @@ function genBoxes(columns, rows, extras, grid) {
 		window.getComputedStyle(headerElem).getPropertyValue("--total-width"),
 		10,
 	);
-	const headerBuffer = marginValue * 2 + (extras ? headerBoxWidth : 0);
+	const headerBuffer = extras ? marginValue * 2 + headerBoxWidth : marginValue;
 	headerRect.setAttribute("width", width - headerBuffer * 2);
 	headerRect.setAttribute("transform", `translate(${headerBuffer}, 0)`);
 	headerRect.setAttribute("height", headerHeight);
