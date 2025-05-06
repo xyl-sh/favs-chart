@@ -458,8 +458,10 @@ function genBoxes(columns, rows, extras, grid) {
 }
 
 function updateBoxes(gridToggled = false) {
-	let columns = document.querySelector("#columns-input").value;
-	let rows = document.querySelector("#rows-input").value;
+	const columnsInput = document.querySelector("#columns-input");
+	const rowsInput = document.querySelector("#rows-input");
+	let columns = columnsInput.value;
+	let rows = rowsInput.value;
 	const extras = document.querySelector("#header-buttons").checked;
 	const gridMode = document.querySelector("#grid-button").checked;
 	if (gridToggled && !modified) {
@@ -470,6 +472,8 @@ function updateBoxes(gridToggled = false) {
 			columns = gridMode ? defaultGridDimension : templateDefaults.c;
 			rows = gridMode ? defaultGridDimension : templateDefaults.r;
 		}
+		columnsInput.value = columns;
+		rowsInput.value = rows;
 	}
 	genBoxes(Number(columns), Number(rows), extras, gridMode);
 }
