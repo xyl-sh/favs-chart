@@ -14,11 +14,7 @@ svg {
 	);
 	--text-y: calc(var(--box-height) + (var(--margin) * 2));
 	--header-height: 200px;
-	--header-box-width: 300px;
-	--header-box-height: 170px;
-	--header-total-width: calc(var(--header-box-width) + (var(--margin) * 2));
-	--header-total-height: calc(var(--header-box-height) + (var(--margin) * 2));
-	--aspect-ratio: calc(var(--box-width) / var(--box-height));
+	--footer-height: 50px;
 
 	font-family: Impact, serif;
 	font-size: 2em;
@@ -56,7 +52,7 @@ text {
 	stroke-width: 6px;
 }
 
-.header-container {
+#header {
 	--box-width: calc(var(--total-width) - (var(--margin) * 2));
 	--box-height: calc(var(--total-height) - (var(--margin) * 2));
 	--total-width: 320px;
@@ -102,8 +98,16 @@ text {
 	);
 }
 
-.header-container:not(.extras) .box,
-.header-container .box .label-container,
+#header > rect {
+	height: var(--header-height);
+}
+
+#footer > rect {
+	height: var(--footer-height);
+}
+
+#header:not(.extras) .box,
+#header .box .label-container,
 .box.hidden {
 	display: none;
 }

@@ -290,9 +290,7 @@ function showModal(e) {
 	const box = e.closest("[data-slot]");
 	dialog.dataset.selectedSlot = box.dataset.slot;
 
-	dialog.querySelector("h2").textContent = box.closest(
-		".header-container, .grid",
-	)
+	dialog.querySelector("h2").textContent = box.closest("#header, .grid")
 		? ""
 		: box.querySelector(".label").textContent;
 	dialog.querySelector("#text-field").value = [
@@ -342,6 +340,10 @@ function genBoxes(columns, rows, extras, grid) {
 		svgStyle.getPropertyValue("--header-height"),
 		10,
 	);
+	const footerHeight = parseInt(
+		svgStyle.getPropertyValue("--footer-height"),
+		10,
+	);
 
 	const width = grid
 		? totalWidth * columns - marginValue * (columns - 3)
@@ -349,7 +351,10 @@ function genBoxes(columns, rows, extras, grid) {
 	const height =
 		(grid
 			? totalHeight * rows - marginValue * (rows - 3)
-			: totalHeight * rows + marginValue * (rows + 1)) + headerHeight;
+			: totalHeight * rows + marginValue * (rows + 1)) +
+		headerHeight +
+		footerHeight +
+		marginValue;
 	const resizeObserver = new ResizeObserver((entries, observer) => {
 		entries.forEach((e) => {
 			const rect = e.target;
@@ -369,8 +374,8 @@ function genBoxes(columns, rows, extras, grid) {
 	mainRect.setAttribute("width", width);
 	mainRect.setAttribute("height", height);
 
-	const headerContainer = svg.querySelector(".header-container");
-	const headerElem = svg.querySelector(".header");
+	const headerContainer = svg.querySelector("#header");
+	const headerElem = headerContainer.querySelector("text");
 	const headerRect = headerContainer.querySelector("rect");
 
 	headerContainer.classList.toggle("extras", extras);
@@ -381,13 +386,28 @@ function genBoxes(columns, rows, extras, grid) {
 	const headerBuffer = extras ? marginValue * 2 + headerBoxWidth : marginValue;
 	headerRect.setAttribute("width", width - headerBuffer * 2);
 	headerRect.setAttribute("transform", `translate(${headerBuffer}, 0)`);
-	headerRect.setAttribute("height", headerHeight);
 	headerElem.setAttribute("y", headerHeight / 2);
 	headerElem.setAttribute("x", width / 2);
 	resizeObserver.observe(headerRect);
 	headerElem.textContent =
 		headerElem.textContent || templateDefaults.t || defaultTitle;
 	headerElem.dataset.defaultRem = 4;
+
+	const footerContainer = svg.querySelector("#footer");
+	const footerElem = footerContainer.querySelector("text");
+	const footerRect = footerContainer.querySelector("rect");
+
+	footerContainer.setAttribute(
+		"transform",
+		`translate(0, ${height - footerHeight - marginValue})`,
+	);
+	footerRect.setAttribute("width", width - marginValue * 2);
+	footerRect.setAttribute("transform", `translate(${marginValue}, 0)`);
+	footerElem.setAttribute("y", footerHeight / 2);
+	footerElem.setAttribute("x", width / 2);
+	resizeObserver.observe(footerRect);
+	footerElem.textContent = window.location.host;
+	footerElem.dataset.defaultRem = 2;
 
 	Array(2)
 		.fill(0)
@@ -543,7 +563,7 @@ async function exportTemplate() {
 	const template = {};
 	const urlParams = new URLSearchParams();
 	const svg = document.querySelector("svg");
-	const title = svg.querySelector(".header-container > text").textContent;
+	const title = svg.querySelector("#header > text").textContent;
 	if (defaultTitle !== title) {
 		urlParams.append("t", title);
 		template.t = title;
@@ -571,35 +591,33 @@ async function exportTemplate() {
 	}
 
 	const entries = {};
-	svg
-		.querySelectorAll("*:not(.header-container) > [data-slot]")
-		.forEach((b) => {
-			if (grid) {
-				return;
-			}
+	svg.querySelectorAll("*:not(#header) > [data-slot]").forEach((b) => {
+		if (grid) {
+			return;
+		}
 
-			const id = b.dataset.slot;
-			const row = Number(id.split("_")[0]);
-			const column = Number(id.split("_")[1]);
+		const id = b.dataset.slot;
+		const row = Number(id.split("_")[0]);
+		const column = Number(id.split("_")[1]);
 
-			const value = b.querySelector(".label").textContent.trim().toLowerCase();
-			if (row + 1 > rows || column + 1 > columns || !value) {
-				return;
+		const value = b.querySelector(".label").textContent.trim().toLowerCase();
+		if (row + 1 > rows || column + 1 > columns || !value) {
+			return;
+		}
+		let defaultValue;
+		try {
+			defaultValue = defaultFields[row][column].trim().toLowerCase();
+		} catch (e) {
+			if (e) {
+				defaultValue = "";
 			}
-			let defaultValue;
-			try {
-				defaultValue = defaultFields[row][column].trim().toLowerCase();
-			} catch (e) {
-				if (e) {
-					defaultValue = "";
-				}
-			}
-			if (value === defaultValue) {
-				return;
-			}
-			urlParams.append(id, value);
-			entries[id] = value;
-		});
+		}
+		if (value === defaultValue) {
+			return;
+		}
+		urlParams.append(id, value);
+		entries[id] = value;
+	});
 
 	if (Object.keys(entries).length) {
 		template.entries = entries;
